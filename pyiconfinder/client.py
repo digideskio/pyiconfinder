@@ -2,6 +2,17 @@ import os
 import requests
 from requests.utils import default_user_agent
 from six import string_types
+from .exceptions import (
+    BadRequestError,
+    InvalidParameterError,
+    BadCredentialsError,
+    NotFoundError,
+    RateLimitExceededError,
+    InternalServerError,
+    PermissionDeniedError,
+    InsufficientPermissionsError,
+    UnexpectedResponseError,
+)
 
 
 DEFAULT_API_URL = 'https://api.iconfinder.com/v2'
@@ -141,11 +152,21 @@ class Client(object):
 
         return '%s/%s' % (self._api_base_url, relative_url.lstrip('/'))
 
-    def _api_get(self, relative_url, params=None):
-        """Perform a GET request against the API.
+    def _api_request(self,
+                     method,
+                     relative_url,
+                     params=None,
+                     data=None,
+                     headers=None):
+        """Perform a request against the API.
 
+        :param method: Request method.
         :param relative_url: Endpoint URL relative to the API base URL.
         :param params: Optional request query parameters as a :class:`dict`.
+        :param data:
+            Optional :class:`dict` or bytes to send in the body of the request.
+        :param headers:
+            Optional :class:`dict` of headers to send with the request.
         :returns: the response from the API.
         """
 
@@ -158,5 +179,60 @@ class Client(object):
             params['client_id'] = self.client_id
             params['client_secret'] = self.client_secret
 
-        return self._api_session.get(self._api_url(relative_url),
-                                     params=params)
+        # Perform the actual request.
+        response = self._api_session.request(method,
+                                             self._api_url(relative_url),
+                                             params=params,
+                                             data=data,
+                                             headers=headers,
+                                             allow_redirects=False)
+
+        # Check the response status code for errors.
+        if response.status_code >= 400:
+            # Attempt to parse the error.
+            error_code = None
+            error_message = None
+
+            try:
+                error_json = response.json()
+                error_code = error_json['code']
+                error_message = error_json['message']
+            except:
+                pass
+
+            # Handle specific errors depending on the status code and error
+            # codes.
+            if response.status_code == 400:
+                if error_code.startswith('invalid_'):
+                    raise InvalidParameterError(
+                        error_message or 'invalid parameter',
+                        error_code[len('invalid_'):]
+                    )
+                raise BadRequestError(error_message or 'bad request')
+            if response.status_code == 401:
+                raise BadCredentialsError(error_message or 'bad credentials')
+            if response.status_code == 403:
+                if error_code == 'insufficient_permissions':
+                    raise InsufficientPermissionsError(
+                        error_message or
+                        'insufficient permissions to access the requested '
+                        'resource'
+                    )
+                raise PermissionDeniedError(
+                    error_message or
+                    'permission to the requested resource was denied'
+                )
+            if response.status_code == 404:
+                raise NotFoundError(error_message or
+                                    'the requested resource was not found')
+            if response.status_code == 429:
+                raise RateLimitExceededError(error_message or
+                                             'request rate limit exceeded')
+            if response.status_code == 500:
+                raise InternalServerError(error_message or
+                                          'internal server error')
+
+            raise UnexpectedResponseError('unexpected response with status '
+                                          'code %d' % (response.status_code))
+
+        return response

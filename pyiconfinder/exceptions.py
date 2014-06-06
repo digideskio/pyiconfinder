@@ -7,7 +7,14 @@ class IconfinderError(Exception):
     pass
 
 
-class InsufficientPermissionsError(IconfinderError):
+class PermissionDeniedError(IconfinderError):
+    """Permission denied error.
+    """
+
+    pass
+
+
+class InsufficientPermissionsError(PermissionDeniedError):
     """Insufficient permissions error.
 
     Make sure the authentication was performed with the scope necessary to
@@ -43,6 +50,38 @@ class RateLimitExceededError(IconfinderError):
 
 class InternalServerError(IconfinderError):
     """Internal API server error.
+    """
+
+    pass
+
+
+class BadCredentialsError(IconfinderError):
+    """Bad credentials error.
+    """
+
+    pass
+
+
+class BadRequestError(IconfinderError):
+    """Bad request error.
+    """
+
+    pass
+
+
+class InvalidParameterError(BadRequestError):
+    """Invalid parameter error.
+
+    :ivar parameter: Errorneous parameter.
+    """
+
+    def __init__(self, message, parameter):
+        self.parameter = parameter
+        super(InvalidParameterError, self).__init__(message)
+
+
+class UnexpectedResponseError(IconfinderError):
+    """Unexpected response error.
     """
 
     pass
