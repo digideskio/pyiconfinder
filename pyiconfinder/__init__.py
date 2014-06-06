@@ -1,0 +1,5 @@
+__title__ = 'pyiconfinder'
+__version__ = '1.0.0'
+__author__ = 'Iconfinder'
+__license__ = 'Apache 2.0'
+__copyright__ = 'Copyright 2014 Iconfinder'

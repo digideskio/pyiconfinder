@@ -1,0 +1,6 @@
+enum34
+requests>=1.0.0,<2.4.0
+six
+nose
+rednose
+flake8
