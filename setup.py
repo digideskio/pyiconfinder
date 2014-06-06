@@ -18,7 +18,6 @@ requires = [
 
 tests_require = [
     'nose',
-    'rednose',
     'flake8',
 ]
 

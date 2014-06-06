@@ -1,7 +1,7 @@
 all:
 
 test:
-	@nosetests
+	@python setup.py test
 
 flake8:
 	@flake8 pyiconfinder tests setup.py
