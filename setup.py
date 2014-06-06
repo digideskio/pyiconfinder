@@ -22,7 +22,7 @@ tests_require = [
     'flake8',
 ]
 
-if sys.version_info.major == 2 and sys.version_info.minor < 7:
+if sys.version_info[0] == 2 and sys.version_info[1] < 7:
     tests_require += 'unittest2'
 
 setup(

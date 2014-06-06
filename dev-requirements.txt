@@ -4,3 +4,4 @@ six
 nose
 rednose
 flake8
+unittest2
