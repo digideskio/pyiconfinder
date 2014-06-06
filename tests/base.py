@@ -8,5 +8,5 @@ else:
 
 
 __all__ = (
-    unittest.__name__,
+    'unittest',
 )
