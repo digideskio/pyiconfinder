@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys
 try:
     from setuptools import setup
 except ImportError:
@@ -21,6 +22,9 @@ tests_require = [
     'flake8',
 ]
 
+if sys.version_info.major == 2 and sys.version_info.minor < 7:
+    tests_require += 'unittest2'
+
 setup(
     name='pyiconfinder',
     version='1.0.0',
@@ -36,6 +40,7 @@ setup(
     package_dir={'pyiconfinder': 'pyiconfinder'},
     include_package_data=True,
     tests_require=tests_require,
+    test_suite='nose.collector',
     install_requires=requires,
     license=open('LICENSE').read(),
     zip_safe=True,

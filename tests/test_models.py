@@ -1,8 +1,8 @@
-from unittest import TestCase
+from .base import unittest
 from pyiconfinder.models import License, LicenseScope
 
 
-class LicenseTestCase(TestCase):
+class LicenseTestCase(unittest.TestCase):
     """Test case for :class:`License` model.
     """
 
