@@ -14,7 +14,7 @@ from .exceptions import (
     UnexpectedResponseError,
 )
 from .model_proxy import ModelClassProxy
-from .models import License
+from .models import License, Style
 
 
 DEFAULT_API_URL = 'https://api.iconfinder.com/v2'
@@ -100,6 +100,7 @@ class Client(object):
 
         # Set up model class proxies.
         self.License = ModelClassProxy(License, self)
+        self.Style = ModelClassProxy(Style, self)
 
     @property
     def client_id(self):
