@@ -18,7 +18,7 @@ requires = [
 
 tests_require = [
     'flake8',
-    'nose',
+    'nose>=1.3.3',
     'pytz',
 ]
 
