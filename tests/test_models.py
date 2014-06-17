@@ -134,19 +134,26 @@ class LicenseTestCase(ModelDeserializeTestCaseMixin,
         self.assertIsNotNone(lic.name)
         self.assertIsNotNone(lic.http_last_modified)
 
+        # Retrieve license non-authenticatedly through model proxy.
+        lic = self.nonauth_client.License.get(5)
+        self.assertIsInstance(lic, License)
+        self.assertEqual(lic.license_id, 5)
+        self.assertIsNotNone(lic.name)
+        self.assertIsNotNone(lic.http_last_modified)
+
         # Test If-Modified-Since behavior.
         #
         # Given that licenses very rarely change, this is a pretty safe test
         # case window.
         self.assertIsNone(License.get(
-            1,
+            5,
             client=self.nonauth_client,
             if_modified_since=lic.http_last_modified)
         )
 
-        lic = License.get(1,
+        lic = License.get(5,
                           client=self.nonauth_client,
                           if_modified_since=lic.http_last_modified -
                           datetime.timedelta(seconds=1))
         self.assertIsInstance(lic, License)
-        self.assertEqual(lic.license_id, 1)
+        self.assertEqual(lic.license_id, 5)

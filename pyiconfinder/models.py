@@ -3,6 +3,7 @@ from six import with_metaclass, string_types, integer_types
 from .exceptions import (
     UnexpectedResponseError,
 )
+from .model_proxy import client_dependant_classmethod
 from .utils import (
     http_datetime,
     parse_http_datetime,
@@ -160,7 +161,7 @@ class RetrievableModelMixin(object):
     """Retrievable model mixin.
     """
 
-    @classmethod
+    @client_dependant_classmethod
     def get(cls, id, if_modified_since=None, client=None):
         """Get a resource by its ID.
 

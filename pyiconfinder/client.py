@@ -13,6 +13,8 @@ from .exceptions import (
     InsufficientPermissionsError,
     UnexpectedResponseError,
 )
+from .model_proxy import ModelClassProxy
+from .models import License
 
 
 DEFAULT_API_URL = 'https://api.iconfinder.com/v2'
@@ -31,6 +33,9 @@ CA_BUNDLE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 class Client(object):
     """Iconfinder API client.
+
+    :ivar License:
+        Proxied access to the :class:`License` model using the client.
     """
 
     def __init__(self,
@@ -92,6 +97,9 @@ class Client(object):
         self._site_session = requests.Session()
         self._site_session.verify = site_ssl_verify
         self._site_session.headers['User-Agent'] = user_agent
+
+        # Set up model class proxies.
+        self.License = ModelClassProxy(License, self)
 
     @property
     def client_id(self):
