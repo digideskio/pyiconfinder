@@ -1,13 +1,20 @@
+PYTHON_BIN?=python
+NOSETESTS_BIN?=nosetests
+FLAKE8_BIN?=flake8
+
 all:
 
 test:
-	@python setup.py test
+	@$(PYTHON_BIN) setup.py test
+
+nose:
+	@$(NOSETESTS_BIN)
 
 flake8:
-	@flake8 pyiconfinder tests setup.py
+	@$(FLAKE8_BIN) pyiconfinder tests setup.py
 
 publish:
-	@python setup.py sdist upload
+	@$(PYTHON_BIN) setup.py sdist upload
 
 clean:
 	@rm -rf build dist *.egg*
