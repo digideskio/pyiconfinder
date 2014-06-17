@@ -1,5 +1,12 @@
 from enum import Enum
 from six import with_metaclass, string_types, integer_types
+from .exceptions import (
+    UnexpectedResponseError,
+)
+from .utils import (
+    http_datetime,
+    parse_http_datetime,
+)
 
 
 class Field(object):
@@ -89,7 +96,9 @@ class ModelMeta(type):
         fields = classdict['__fields__']
 
         # Build the slot list.
-        classdict['__slots__'] = fields.keys()
+        classdict['__slots__'] = tuple(fields.keys()) + (
+            'http_last_modified',
+        )
 
         # Return the final model class.
         model_cls = super(ModelMeta, metacls) \
@@ -117,6 +126,20 @@ class Model(with_metaclass(ModelMeta, object)):
                               if getattr(self, '__repr_fields__', None)
                               else '')
 
+    @property
+    def last_modified(self):
+        """Last modification time.
+
+        :returns:
+            the last modification time as a time zone naive UTC
+            :class:`datetime.datetime` or ``None`` if the last modification
+            time is not known.
+        """
+
+        if self.http_last_modified:
+            return self.http_last_modified
+        return None
+
     @classmethod
     def deserialize(cls, payload):
         """Deserialize a payload.
@@ -131,6 +154,49 @@ class Model(with_metaclass(ModelMeta, object)):
             setattr(des, name, field.deserialize(payload))
 
         return des
+
+
+class RetrievableModelMixin(object):
+    """Retrievable model mixin.
+    """
+
+    @classmethod
+    def get(cls, id, if_modified_since=None, client=None):
+        """Get a resource by its ID.
+
+        :param id: Unique resource ID.
+        :param if_modified_since:
+            Optional timestamp as :class:`datetime.datetime` to test if the
+            resource has been modified. If the resource is unmodified since the
+            provided timestamp, the call will return ``None``.
+        :param client: Optional client to use to perform the request.
+        """
+
+        # Construct headers.
+        headers = {}
+        if if_modified_since is not None:
+            headers['If-Modified-Since'] = http_datetime(if_modified_since)
+
+        # Perform the request.
+        response = client._api_request('GET',
+                                       'licenses/%s' % (id),
+                                       headers=headers)
+
+        if response.status_code == 304 and if_modified_since is not None:
+            return None
+        if response.status_code != 200:
+            raise UnexpectedResponseError('unexpected response status code: %d'
+                                          % (response.status_code))
+
+        # Deserialize the model.
+        model = cls.deserialize(response.json())
+
+        # Apply available header data.
+        if 'last-modified' in response.headers:
+            model.http_last_modified = \
+                parse_http_datetime(response.headers['last-modified'])
+
+        return model
 
 
 class User(Model):
@@ -196,7 +262,7 @@ class Category(Model):
     :ivar name: Name.
     """
 
-    __fields = {
+    __fields__ = {
         'identifier': StringField('identifier'),
         'name': StringField('name'),
     }
@@ -210,7 +276,7 @@ class Style(Model):
     :ivar name: Name.
     """
 
-    __fields = {
+    __fields__ = {
         'identifier': StringField('identifier'),
         'name': StringField('name'),
     }
@@ -234,7 +300,7 @@ class LicenseScope(Enum):
     """
 
 
-class License(Model):
+class License(Model, RetrievableModelMixin):
     """License.
 
     :ivar license_id: License ID.
@@ -250,3 +316,4 @@ class License(Model):
         'scope': EnumField('scope', LicenseScope),
     }
     __repr_fields__ = ('license_id', 'name', )
+    __endpoint__ = 'licenses'
