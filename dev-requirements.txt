@@ -4,3 +4,4 @@ six
 nose>=1.3.3
 flake8
 pytz
+aniso8601

@@ -4,85 +4,22 @@ from six import with_metaclass, string_types, integer_types
 from .exceptions import (
     UnexpectedResponseError,
 )
+from .fields import (
+    StringField,
+    IntegerField,
+    FloatField,
+    BooleanField,
+    EnumField,
+    DateTimeField,
+    NestedModelField,
+    NestedModelListField,
+    UserOrAuthorField,
+)
 from .model_proxy import client_dependant_classmethod
 from .utils import (
     http_datetime,
     parse_http_datetime,
 )
-
-
-class Field(object):
-    """Model field.
-
-    Abstract base class.
-    """
-
-    def __init__(self, name, required=True, primary_key=False):
-        self.name = name
-        self.required = required
-        self.primary_key = primary_key
-
-
-class StringField(Field):
-    """String model field.
-    """
-
-    def deserialize(self, payload):
-        value = payload.get(self.name, None)
-
-        if value is None and self.required:
-            raise ValueError('expected field %s to be present in payload' %
-                             (self.name))
-        elif value is not None and not isinstance(value, string_types):
-            raise ValueError('expected field %s to be a string, but it is '
-                             '%r: %r' % (self.name, type(value), value))
-
-        return value
-
-
-class IntegerField(Field):
-    def deserialize(self, payload):
-        value = payload.get(self.name, None)
-
-        if value is None and self.required:
-            raise ValueError('expected field %s to be present in payload' %
-                             (self.name))
-        elif value is not None and not isinstance(value, integer_types):
-            raise ValueError('expected field %s to be an integer, but it is '
-                             '%r: %r' % (self.name, type(value), value))
-
-        return value
-
-
-class BooleanField(Field):
-    def deserialize(self, payload):
-        value = payload.get(self.name, None)
-
-        if value is None and self.required:
-            raise ValueError('expected field %s to be present in payload' %
-                             (self.name))
-        if value is not None and not isinstance(value, bool):
-            raise ValueError('expected field %s to be a boolean, but it is '
-                             '%r: %r' % (self.name, type(value), value))
-
-        return value
-
-
-class EnumField(Field):
-    def __init__(self, name, enum_cls, required=True):
-        super(EnumField, self).__init__(name, required)
-        self.enum_cls = enum_cls
-
-    def deserialize(self, payload):
-        value = payload.get(self.name, None)
-
-        if value is None and self.required:
-            raise ValueError('expected field %s to be present in payload' %
-                             (self.name))
-        if value is not None:
-            return self.enum_cls(value)
-
-        return value
 
 
 class ModelMeta(type):
@@ -484,3 +421,54 @@ class License(Model, RetrievableModelMixin):
     }
     __repr_fields__ = ('license_id', 'name', )
     __endpoint__ = 'licenses'
+
+
+class IconType(Enum):
+    """Icon type.
+    """
+
+    raster = 'raster'
+    """Raster.
+    """
+
+    vector = 'vector'
+    """Vector.
+    """
+
+
+class IconSetPrice(Model):
+    """Icon set price.
+    """
+
+    __fields__ = {
+        'currency': StringField('currency', primary_key=True),
+        'price': FloatField('price'),
+        'license': NestedModelField('license', License),
+    }
+    __repr_fields__ = ('currency', 'price', 'license', )
+
+
+class IconSet(Model, RetrievableModelMixin):
+    """Icon set.
+    """
+
+    __fields__ = {
+        'iconset_id': IntegerField('iconset_id', primary_key=True),
+        'identifier': StringField('identifier'),
+        'name': StringField('name'),
+        'is_premium': BooleanField('is_premium'),
+        'readme': StringField('readme', required=False),
+        'website_url': StringField('website_url', required=False),
+        'icons_count': IntegerField('icons_count'),
+        'published_at': DateTimeField('published_at'),
+        'type': EnumField('type', IconType),
+        'prices': NestedModelListField('prices', IconSetPrice, required=False),
+        'styles': NestedModelListField('styles', Style, required=False),
+        'categories': NestedModelListField('categories',
+                                           Category,
+                                           required=False),
+        'author': UserOrAuthorField('author', required=False),
+    }
+    __repr_fields__ = ('iconset_id', 'identifier', 'name', )
+    __endpoint__ = 'iconsets'
+    __plural__ = 'iconsets'

@@ -4,7 +4,7 @@ from .base import unittest
 from pyiconfinder.client import Client
 from pyiconfinder.exceptions import NotFoundError
 from pyiconfinder.models import (
-    Author, Category, Style, License, LicenseScope, ModelList,
+    Author, Category, IconSet, Style, License, LicenseScope, ModelList,
 )
 
 
@@ -135,8 +135,8 @@ class AuthorTestCase(ModelDeserializeTestCaseMixin,
         self.assertIsNone(Author.get(
             16,
             client=self.nonauth_client,
-            if_modified_since=author.http_last_modified)
-        )
+            if_modified_since=author.http_last_modified
+        ))
 
         author = Author.get(16,
                             client=self.nonauth_client,
@@ -287,8 +287,8 @@ class StyleTestCase(ModelDeserializeTestCaseMixin,
         self.assertIsNone(Style.get(
             'handdrawn',
             client=self.nonauth_client,
-            if_modified_since=style.http_last_modified)
-        )
+            if_modified_since=style.http_last_modified
+        ))
 
         style = Style.get('handdrawn',
                           client=self.nonauth_client,
@@ -384,8 +384,8 @@ class LicenseTestCase(ModelDeserializeTestCaseMixin,
         self.assertIsNone(License.get(
             5,
             client=self.nonauth_client,
-            if_modified_since=lic.http_last_modified)
-        )
+            if_modified_since=lic.http_last_modified
+        ))
 
         lic = License.get(5,
                           client=self.nonauth_client,
@@ -393,3 +393,66 @@ class LicenseTestCase(ModelDeserializeTestCaseMixin,
                           datetime.timedelta(seconds=1))
         self.assertIsInstance(lic, License)
         self.assertEqual(lic.license_id, 5)
+
+
+class IconSetTestCase(ModelTestCase):
+    """Test case for :class:`IconSet` model.
+    """
+
+    model_cls = IconSet
+
+    def test_get(self):
+        """IconSet.get(..)
+        """
+
+        # Test non-existent icon sets.
+        with self.assertRaises(NotFoundError):
+            IconSet.get('--horse', client=self.nonauth_client)
+
+        with self.assertRaises(NotFoundError):
+            self.nonauth_client.IconSet.get('--horse')
+
+        # Test public icon sets.
+        for retrieve_id, iconset_id, identifier in [
+                # Free icon set.
+                (1781, 1781, 'streamline-icon-set-free-pack'),
+                ('streamline-icon-set-free-pack',
+                 1781,
+                 'streamline-icon-set-free-pack'),
+
+                # Premium icon set.
+                (4835, 4835, 'cat-power-premium'),
+                ('cat-power-premium', 4835, 'cat-power-premium'),
+        ]:
+            # Retrieve icon set non-authenticatedly.
+            iconset = IconSet.get(retrieve_id, client=self.nonauth_client)
+            self.assertIsInstance(iconset, IconSet)
+            self.assertEqual(iconset.iconset_id, iconset_id)
+            self.assertEqual(iconset.identifier, identifier)
+            self.assertIsNotNone(iconset.http_last_modified)
+
+            # Retrieve icon set non-authenticatedly through model proxy.
+            iconset = self.nonauth_client.IconSet.get(retrieve_id)
+            self.assertIsInstance(iconset, IconSet)
+            self.assertIsNotNone(iconset.http_last_modified)
+            self.assertEqual(iconset.iconset_id, iconset_id)
+            self.assertEqual(iconset.identifier, identifier)
+
+            # Test If-Modified-Since behavior.
+            #
+            # Might just break, but in most cases it shouldn't be an issue.
+            self.assertIsNone(IconSet.get(
+                retrieve_id,
+                client=self.nonauth_client,
+                if_modified_since=iconset.http_last_modified
+            ))
+
+            iconset = IconSet.get(
+                retrieve_id,
+                client=self.nonauth_client,
+                if_modified_since=iconset.http_last_modified -
+                datetime.timedelta(seconds=1)
+            )
+            self.assertIsInstance(iconset, IconSet)
+            self.assertEqual(iconset.iconset_id, iconset_id)
+            self.assertEqual(iconset.identifier, identifier)

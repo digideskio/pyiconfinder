@@ -14,6 +14,7 @@ requires = [
     'requests>=1.0.0,<2.4.0',
     'six',
     'enum34',
+    'aniso8601',
 ]
 
 tests_require = [
