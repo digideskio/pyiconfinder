@@ -414,7 +414,13 @@ class IconSetTestCase(ModelTestCase):
 
         # Test public icon sets.
         for retrieve_id, iconset_id, identifier in [
-                # Free icon set.
+                # Free icon set by author.
+                (15, 15, 'DarkGlass_Reworked'),
+                ('DarkGlass_Reworked',
+                 15,
+                 'DarkGlass_Reworked'),
+
+                # Free icon set by user.
                 (1781, 1781, 'streamline-icon-set-free-pack'),
                 ('streamline-icon-set-free-pack',
                  1781,
