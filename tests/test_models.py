@@ -4,7 +4,7 @@ from .base import unittest
 from pyiconfinder.client import Client
 from pyiconfinder.exceptions import NotFoundError
 from pyiconfinder.models import (
-    Category, Style, License, LicenseScope, ModelList,
+    Author, Category, Style, License, LicenseScope, ModelList,
 )
 
 
@@ -74,6 +74,76 @@ class ModelDeserializeTestCaseMixin(object):
         for payload, exception in self.deserialize_fixtures_invalid:
             with self.assertRaises(exception):
                 self.model_cls.deserialize(payload)
+
+
+class AuthorTestCase(ModelDeserializeTestCaseMixin,
+                     ModelTestCase):
+    """Test case for :class:`Author` model.
+    """
+
+    model_cls = Author
+    deserialize_fixtures_valid = [({
+        'author_id': 1,
+        'name': 'Author Name',
+        'iconsets_count': 5,
+    }, {
+        'author_id': 1,
+        'name': 'Author Name',
+        'iconsets_count': 5,
+    }, ), ({
+        'author_id': 1,
+        'name': 'Author Name',
+        'iconsets_count': 5,
+        'website_url': 'http://designer.com/',
+    }, {
+        'author_id': 1,
+        'name': 'Author Name',
+        'iconsets_count': 5,
+        'website_url': 'http://designer.com/',
+    }, ), ]
+    deserialize_fixtures_invalid = [({}, ValueError), ({
+        'author_id': 1,
+        'name': 'Author Name',
+    }, ValueError)]
+
+    def test_get(self):
+        """Author.get(..)
+        """
+
+        # Retrieve author non-authenticatedly.
+        author = Author.get(15, client=self.nonauth_client)
+        self.assertIsInstance(author, Author)
+        self.assertEqual(author.author_id, 15)
+        self.assertIsNotNone(author.http_last_modified)
+
+        with self.assertRaises(NotFoundError):
+            Author.get(99999999, client=self.nonauth_client)
+
+        # Retrieve author non-authenticatedly through model proxy.
+        author = self.nonauth_client.Author.get(16)
+        self.assertIsInstance(author, Author)
+        self.assertEqual(author.author_id, 16)
+        self.assertIsNotNone(author.http_last_modified)
+
+        with self.assertRaises(NotFoundError):
+            self.nonauth_client.Author.get(99999999)
+
+        # Test If-Modified-Since behavior.
+        #
+        # Given that categories very rarely change, this is a pretty safe test
+        # case window.
+        self.assertIsNone(Author.get(
+            16,
+            client=self.nonauth_client,
+            if_modified_since=author.http_last_modified)
+        )
+
+        author = Author.get(16,
+                            client=self.nonauth_client,
+                            if_modified_since=author.http_last_modified -
+                            datetime.timedelta(seconds=1))
+        self.assertIsInstance(author, Author)
+        self.assertEqual(author.author_id, 16)
 
 
 class CategoryTestCase(ModelDeserializeTestCaseMixin,
@@ -163,9 +233,12 @@ class CategoryTestCase(ModelDeserializeTestCaseMixin,
                                    client=self.nonauth_client)
         self.assertIsInstance(categories, ModelList)
         self.assertEqual(len(categories), 3)
-        self.assertEqual(categories[0].identifier, all_categories[2].identifier)
-        self.assertEqual(categories[1].identifier, all_categories[3].identifier)
-        self.assertEqual(categories[2].identifier, all_categories[4].identifier)
+        self.assertEqual(categories[0].identifier,
+                         all_categories[2].identifier)
+        self.assertEqual(categories[1].identifier,
+                         all_categories[3].identifier)
+        self.assertEqual(categories[2].identifier,
+                         all_categories[4].identifier)
 
 
 class StyleTestCase(ModelDeserializeTestCaseMixin,

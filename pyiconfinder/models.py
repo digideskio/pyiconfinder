@@ -399,7 +399,7 @@ class User(Model):
     __repr_fields__ = ('user_id', 'username', )
 
 
-class Author(Model):
+class Author(Model, RetrievableModelMixin):
     """Author.
 
     :ivar author_id: Author ID.
@@ -411,10 +411,11 @@ class Author(Model):
     __fields__ = {
         'author_id': IntegerField('author_id', primary_key=True),
         'name': StringField('name'),
-        'website_url': StringField('website_url'),
         'iconsets_count': IntegerField('iconsets_count'),
+        'website_url': StringField('website_url', required=False),
     }
     __repr_fields__ = ('author_id', 'name', )
+    __endpoint__ = 'authors'
 
 
 class Category(Model, RetrievableModelMixin, ListableByAfterModelMixin):
