@@ -417,7 +417,7 @@ class Author(Model):
     __repr_fields__ = ('author_id', 'name', )
 
 
-class Category(Model):
+class Category(Model, RetrievableModelMixin, ListableByAfterModelMixin):
     """Category.
 
     :ivar identifier: Identifier.
@@ -429,6 +429,8 @@ class Category(Model):
         'name': StringField('name'),
     }
     __repr_fields__ = ('identifier', 'name', )
+    __plural__ = 'categories'
+    __endpoint__ = 'categories'
 
 
 class Style(Model, RetrievableModelMixin, ListableByAfterModelMixin):

@@ -2,6 +2,7 @@ import datetime
 import os
 from .base import unittest
 from pyiconfinder.client import Client
+from pyiconfinder.exceptions import NotFoundError
 from pyiconfinder.models import (
     Category, Style, License, LicenseScope, ModelList,
 )
@@ -9,6 +10,11 @@ from pyiconfinder.models import (
 
 TOTAL_STYLES_COUNT = 9
 """Known total number of styles.
+"""
+
+
+TOTAL_CATEGORIES_COUNT = 40
+"""Known total number of categories.
 """
 
 
@@ -85,6 +91,82 @@ class CategoryTestCase(ModelDeserializeTestCaseMixin,
     }, ), ]
     deserialize_fixtures_invalid = [({}, ValueError)]
 
+    def test_get(self):
+        """Category.get(..)
+        """
+
+        # Retrieve category non-authenticatedly.
+        category = Category.get('halloween', client=self.nonauth_client)
+        self.assertIsInstance(category, Category)
+        self.assertEqual(category.identifier, 'halloween')
+        self.assertEqual(category.name, 'Halloween')
+        self.assertIsNotNone(category.http_last_modified)
+
+        with self.assertRaises(NotFoundError):
+            Category.get('horse', client=self.nonauth_client)
+
+        # Retrieve category non-authenticatedly through model proxy.
+        category = self.nonauth_client.Category.get('abstract')
+        self.assertIsInstance(category, Category)
+        self.assertEqual(category.identifier, 'abstract')
+        self.assertEqual(category.name, 'Abstract')
+        self.assertIsNotNone(category.http_last_modified)
+
+        with self.assertRaises(NotFoundError):
+            self.nonauth_client.Category.get('horse')
+
+        # Test If-Modified-Since behavior.
+        #
+        # Given that categories very rarely change, this is a pretty safe test
+        # case window.
+        self.assertIsNone(Category.get(
+            'abstract',
+            client=self.nonauth_client,
+            if_modified_since=category.http_last_modified)
+        )
+
+        category = Category.get('abstract',
+                                client=self.nonauth_client,
+                                if_modified_since=category.http_last_modified -
+                                datetime.timedelta(seconds=1))
+        self.assertIsInstance(category, Category)
+        self.assertEqual(category.identifier, 'abstract')
+
+    def test_list(self):
+        """Category.list(..)
+        """
+
+        # Retrieve categories.
+        all_categories = None
+
+        for kwargs in [{}, {
+            'count': 100,
+        }, {
+            'count': 5,
+        }]:
+            categories = Category.list(client=self.nonauth_client, **kwargs)
+            if all_categories is None:
+                all_categories = categories
+            self.assertIsInstance(categories, ModelList)
+            self.assertEqual(len(categories),
+                             min(kwargs.get('count', 10),
+                                 TOTAL_CATEGORIES_COUNT))
+            self.assertEqual(categories.total_count, TOTAL_CATEGORIES_COUNT)
+            self.assertIsNotNone(categories.last_modified)
+
+            for s in categories:
+                self.assertIsInstance(s, Category)
+
+        # Retrieve limited list of categories.
+        categories = Category.list(count=3,
+                                   after=all_categories[1],
+                                   client=self.nonauth_client)
+        self.assertIsInstance(categories, ModelList)
+        self.assertEqual(len(categories), 3)
+        self.assertEqual(categories[0].identifier, all_categories[2].identifier)
+        self.assertEqual(categories[1].identifier, all_categories[3].identifier)
+        self.assertEqual(categories[2].identifier, all_categories[4].identifier)
+
 
 class StyleTestCase(ModelDeserializeTestCaseMixin,
                     ModelTestCase):
@@ -112,12 +194,18 @@ class StyleTestCase(ModelDeserializeTestCaseMixin,
         self.assertEqual(style.name, 'Glyph')
         self.assertIsNotNone(style.http_last_modified)
 
+        with self.assertRaises(NotFoundError):
+            Style.get('horse', client=self.nonauth_client)
+
         # Retrieve style non-authenticatedly through model proxy.
         style = self.nonauth_client.Style.get('handdrawn')
         self.assertIsInstance(style, Style)
         self.assertEqual(style.identifier, 'handdrawn')
         self.assertEqual(style.name, 'Handdrawn')
         self.assertIsNotNone(style.http_last_modified)
+
+        with self.assertRaises(NotFoundError):
+            self.nonauth_client.Style.get('horse')
 
         # Test If-Modified-Since behavior.
         #

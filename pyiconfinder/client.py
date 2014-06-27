@@ -14,7 +14,7 @@ from .exceptions import (
     UnexpectedResponseError,
 )
 from .model_proxy import ModelClassProxy
-from .models import License, Style
+from .models import Category, License, Style
 
 
 DEFAULT_API_URL = 'https://api.iconfinder.com/v2'
@@ -99,6 +99,7 @@ class Client(object):
         self._site_session.headers['User-Agent'] = user_agent
 
         # Set up model class proxies.
+        self.Category = ModelClassProxy(Category, self)
         self.License = ModelClassProxy(License, self)
         self.Style = ModelClassProxy(Style, self)
 
